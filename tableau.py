@@ -48,7 +48,6 @@ class Proposition:
         return False
     
     def parse(self):
-        # Check if it is actually a formula
         if not self.is_fmla():
             return 0
         if self.is_negation():
@@ -85,10 +84,9 @@ class FirstOrderLogic:
         predicates = ['P', 'Q', 'R', 'S']
         if len(self.fmla) > 4 and self.fmla[0] in predicates and self.fmla[1] == '(' and self.fmla[-1] == ')' and ',' in self.fmla:
             vars = self.fmla[2:-1].split(',')
-            return len(vars) == 2 and all(var in ['x', 'y', 'z', 'w'] for var in vars)
+            return len(vars) == 2 and all(var in ['x', 'y', 'z', 'w'] + constants for var in vars)
         return False
 
-    # write a function that checks if a First order logic formula is a negation
     def is_negation(self):
         if self.fmla.startswith('~'):
             if FirstOrderLogic(self.fmla[1:]).is_fmla():
@@ -97,10 +95,10 @@ class FirstOrderLogic:
         return False
 
     def is_universally_quantified(self):
-        return self.fmla.startswith('A') and self.fmla[1] in ['x', 'y', 'z', 'w'] and FirstOrderLogic(self.fmla[2:]).is_fmla()
+        return self.fmla.startswith('A') and self.fmla[1] in ['x', 'y', 'z', 'w'] + constants and FirstOrderLogic(self.fmla[2:]).is_fmla()
 
     def is_existentially_quantified(self):
-        return self.fmla.startswith('E') and self.fmla[1] in ['x', 'y', 'z', 'w'] and FirstOrderLogic(self.fmla[2:]).is_fmla()
+        return self.fmla.startswith('E') and self.fmla[1] in ['x', 'y', 'z', 'w'] + constants and FirstOrderLogic(self.fmla[2:]).is_fmla()
 
     def is_binary_connective(self):
         if not (self.fmla.startswith('(') and self.fmla.endswith(')')):
@@ -119,7 +117,6 @@ class FirstOrderLogic:
                         right = self.fmla[i+len(conn):-1]
                         if FirstOrderLogic(left).is_fmla() and FirstOrderLogic(right).is_fmla():
                             return left, conn, right
-        #print(conn)
         return None
 
     def is_fmla(self):
@@ -181,7 +178,6 @@ def clean_negations(fmla):
     else:
         return '~' + fmla
 
-# Check if a formula has matching brackets
 def check_matching_brackets(fmla):
     stack = []
     for elem in fmla:
@@ -195,7 +191,6 @@ def check_matching_brackets(fmla):
         return True
     return False
 
-# Parse a formula, consult parseOutputs for return values.
 def parse(fmla):
     if Proposition(fmla).is_fmla():
         return Proposition(fmla).parse()
@@ -204,7 +199,7 @@ def parse(fmla):
     else:
         return 0
 
-# Return the LHS of a binary connective formula
+
 def lhs(fmla):
     if FirstOrderLogic(fmla).is_fmla():
         if FirstOrderLogic(fmla).is_binary_connective():
@@ -219,7 +214,13 @@ def lhs(fmla):
     else:
         return ''
 
-# Return the connective symbol of a binary connective formula
+def lhsclean(fmla):
+    return clean_negations(lhs(fmla))
+
+def rhsclean(fmla):
+    return clean_negations(rhs(fmla))
+
+
 def con(fmla):
     if FirstOrderLogic(fmla).is_fmla():
         if FirstOrderLogic(fmla).is_binary_connective():
@@ -233,7 +234,7 @@ def con(fmla):
             return ''
     return ''
 
-# Return the RHS symbol of a binary connective formula
+
 def rhs(fmla):
     if FirstOrderLogic(fmla).is_fmla():
         if FirstOrderLogic(fmla).is_binary_connective():
@@ -248,25 +249,18 @@ def rhs(fmla):
     return '' 
 
 
-# You may choose to represent a theory as a set or a list
-def theory(fmla):#initialise a theory with a single formula in it
+def theory(fmla):
     return [fmla]
 
 def expanded(branch):
     for fmla in branch:
         fmla = clean_negations(fmla)
-        #print("0", FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_binary_connective())
-        # print("1", (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_binary_connective()))
-        # print("2", FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_binary_connective()) 
-        # print('3', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_universally_quantified())
-        # print('4', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_existentially_quantified())
-        # print('5', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_universally_quantified())
-        # print('6', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified())
 
         if Proposition(fmla).is_fmla() and Proposition(fmla).is_binary_connective() or (Proposition(fmla).is_fmla() and Proposition(fmla).is_negation() and Proposition(fmla[1:]).is_binary_connective()):
             return False  
         elif (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_binary_connective()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_binary_connective()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_universally_quantified()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_existentially_quantified()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_universally_quantified()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified()):
             return False 
+        
     return True
 
 def contradictory(branch):
@@ -279,7 +273,6 @@ def contradictory(branch):
                 if fmla in branch and fmla[1:] in branch:
                     return True
         elif FirstOrderLogic(fmla).is_fmla(): 
-            #print(fmla, branch)
             if FirstOrderLogic(fmla).is_predicate():
                 if fmla in branch and '~'+fmla in branch:
                     return True
@@ -289,6 +282,26 @@ def contradictory(branch):
     return False
 
 def pick_non_literal(branch):
+    for fmla in reversed(branch):
+        if FirstOrderLogic(fmla).is_fmla():
+            if FirstOrderLogic(fmla).is_alpha():
+                return fmla
+    
+    for fmla in reversed(branch):
+        if FirstOrderLogic(fmla).is_fmla():
+            if FirstOrderLogic(fmla).is_delta():
+                return fmla
+            
+    for fmla in reversed(branch):
+        if FirstOrderLogic(fmla).is_fmla():
+            if FirstOrderLogic(fmla).is_beta():
+                return fmla
+            
+    for fmla in reversed(branch):
+        if FirstOrderLogic(fmla).is_fmla():
+            if FirstOrderLogic(fmla).is_gamma():
+                return fmla
+            
     for fmla in reversed(branch):
         if Proposition(fmla).is_fmla():
             if Proposition(fmla).is_binary_connective():
@@ -328,19 +341,23 @@ def pick_next_constant(last_constant = None):
         next_idx = constants.index(last_constant) + 1
         if next_idx < len(constants):
             return constants[next_idx]
+        else:
+            return None
+    if not last_constant and len(constants) > 0:
+        return constants[0]
     return pick_new_constant()
 
 global constants
 constants = []
-used_constants = []
 
-#check for satisfiability
+
 def sat(tableau):
-#output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
     last_constant_used = {}
+    global constants
+    constants = []
     while tableau:
         branch = tableau.pop()
-        #print("EXPANDED", expanded(branch))
+
         if expanded(branch) and not contradictory(branch):
             return 1
         else:
@@ -349,47 +366,47 @@ def sat(tableau):
                 fmla_index = branch.index(fmla)
                 fmla = clean_negations(fmla)
                 branch[fmla_index] = fmla
-                #print(FirstOrderLogic(fmla).is_negation())
+
 
                 if Proposition(fmla).is_fmla():
                     
                     if Proposition(fmla).is_alpha():
                         if con(fmla) == '/\\':
                             branch.remove(fmla)
-                            branch = branch + [lhs(fmla), rhs(fmla)]
+                            branch = branch + [lhsclean(fmla), rhsclean(fmla)]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
                         elif Proposition(fmla).is_negation() and con(fmla[1:]) == '=>':
                             branch.remove(fmla)
-                            branch = branch + [lhs(fmla[1:]), '~' + rhs(fmla[1:])]
+                            branch = branch + [lhsclean(fmla[1:]), clean_negations('~' + rhsclean(fmla[1:]))]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
                         elif Proposition(fmla).is_negation() and con(fmla[1:]) == '\\/':
                             branch.remove(fmla)
-                            branch = branch + ['~' + lhs(fmla[1:]), '~' + rhs(fmla[1:])]
+                            branch = branch + [clean_negations('~' + lhsclean(fmla[1:])), clean_negations('~' + rhsclean(fmla[1:]))]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
                     elif Proposition(fmla).is_beta():
                             branch.remove(fmla)
                             if con(fmla) == '\\/':
-                                new_branch1 = branch + [lhs(fmla)]
-                                new_branch2 = branch + [rhs(fmla)]
+                                new_branch1 = branch + [lhsclean(fmla)]
+                                new_branch2 = branch + [rhsclean(fmla)]
                                 if not contradictory(new_branch1) and new_branch1 not in tableau:
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
                                     tableau.append(new_branch2)
 
                             elif con(fmla) == '=>':
-                                new_branch1 = branch + ['~' + lhs(fmla)]
-                                new_branch2 = branch + [rhs(fmla)]
+                                new_branch1 = branch + [clean_negations('~' + lhsclean(fmla))]
+                                new_branch2 = branch + [rhsclean(fmla)]
                                 if not contradictory(new_branch1) and new_branch1 not in tableau:
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
                                     tableau.append(new_branch2)
 
                             elif Proposition(fmla).is_negation() and con(fmla[1:]) == '/\\':
-                                new_branch1 = branch + ['~' + lhs(fmla[1:])]
-                                new_branch2 = branch + ['~' + rhs(fmla[1:])]
+                                new_branch1 = branch + [clean_negations('~' + lhsclean(fmla[1:]))]
+                                new_branch2 = branch + [clean_negations('~' + rhsclean(fmla[1:]))]
                                 if not contradictory(new_branch1) and new_branch1 not in tableau:
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
@@ -399,41 +416,41 @@ def sat(tableau):
                     if FirstOrderLogic(fmla).is_alpha():                        
                         if con(fmla) == '/\\':
                             branch.remove(fmla)
-                            branch = branch + [lhs(fmla), rhs(fmla)]
+                            branch = branch + [lhsclean(fmla), rhsclean(fmla)]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
                         elif FirstOrderLogic(fmla).is_negation() and con(fmla[1:]) == '=>':
                             branch.remove(fmla)
-                            branch = branch + [lhs(fmla[1:]), '~' + rhs(fmla[1:])]
+                            branch = branch + [lhsclean(fmla[1:]), clean_negations('~' + rhsclean(fmla[1:]))]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
                         elif FirstOrderLogic(fmla).is_negation() and con(fmla[1:]) == '\\/':
                             branch.remove(fmla)
-                            branch = branch + ['~' + lhs(fmla[1:]), '~' + rhs(fmla[1:])]
+                            branch = branch + [clean_negations('~' + lhsclean(fmla[1:])), clean_negations('~' + rhsclean(fmla[1:]))]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
 
                     elif FirstOrderLogic(fmla).is_beta():
                             branch.remove(fmla)
                             if con(fmla) == '\\/':
-                                new_branch1 = branch + [lhs(fmla)]
-                                new_branch2 = branch + [rhs(fmla)]
+                                new_branch1 = branch + [lhsclean(fmla)]
+                                new_branch2 = branch + [rhsclean(fmla)]
                                 if not contradictory(new_branch1) and new_branch1 not in tableau:
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
                                     tableau.append(new_branch2)
 
                             elif con(fmla) == '=>':
-                                new_branch1 = branch + ['~' + lhs(fmla)]
-                                new_branch2 = branch + [rhs(fmla)]
+                                new_branch1 = branch + [clean_negations('~' + lhsclean(fmla))]
+                                new_branch2 = branch + [rhsclean(fmla)]
                                 if not contradictory(new_branch1) and new_branch1 not in tableau:
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
                                     tableau.append(new_branch2)
 
                             elif FirstOrderLogic(fmla).is_negation() and con(fmla[1:]) == '/\\':
-                                new_branch1 = branch + ['~' + lhs(fmla[1:])]
-                                new_branch2 = branch + ['~' + rhs(fmla[1:])]
+                                new_branch1 = branch + [clean_negations('~' + lhsclean(fmla[1:]))]
+                                new_branch2 = branch + [clean_negations('~' + rhsclean(fmla[1:]))]
                                 if not contradictory(new_branch1) and new_branch1 not in tableau:
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
@@ -451,12 +468,12 @@ def sat(tableau):
                         elif FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_universally_quantified():
                             branch.remove(fmla)
                             fmla = replace_variable_in_scope(fmla[1:], fmla[2], pick_new_constant())
-                            branch = branch + ['~' + fmla]
+                            branch = branch + [clean_negations('~' + fmla)]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
 
                     elif FirstOrderLogic(fmla).is_gamma():
-                        #print(len(constants))
+
                         if len(constants) > MAX_CONSTANTS:
                             return 2
                         if FirstOrderLogic(fmla).is_universally_quantified():
@@ -465,26 +482,32 @@ def sat(tableau):
                             if fmla in last_constant_used:
                                 last_constant = last_constant_used[fmla]
                             new_term = pick_next_constant(last_constant)
-                            #print(new_term)
+                            if new_term is None:
+                                branch.remove(fmla)
+                                tableau.insert(0, branch)
+                                continue
                             last_constant_used[fmla] = new_term
                             instantiated_fmla = replace_variable_in_scope(fmla, quantified_var, new_term)
                             if instantiated_fmla not in branch:
-                                branch.append(instantiated_fmla)
-                            #print(not contradictory(branch), branch not in tableau)
+                                branch.insert(0, instantiated_fmla)
                             if not contradictory(branch) and branch not in tableau:
-                                tableau.append(branch)
+                                tableau.insert(0, branch)
                         elif FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified():
                             quantified_var = fmla[2]
                             last_constant = None
                             if fmla in last_constant_used:
                                 last_constant = last_constant_used[fmla]
                             new_term = pick_next_constant(last_constant)
+                            if new_term is None:
+                                branch.remove(fmla)
+                                tableau.insert(0, branch)
+                                continue
                             last_constant_used[fmla] = new_term
                             instantiated_fmla = replace_variable_in_scope(fmla, quantified_var, new_term)
                             if instantiated_fmla not in branch:
-                                branch.append(instantiated_fmla)
+                                branch.insert(0, instantiated_fmla)
                             if not contradictory(branch) and branch not in tableau:
-                                tableau.append(branch)
+                                tableau.insert(0, branch)
     return 0
 
 #DO NOT MODIFY THE CODE BELOW
