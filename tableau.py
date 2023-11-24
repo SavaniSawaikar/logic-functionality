@@ -41,7 +41,7 @@ class Proposition:
             return False
         if self.is_proposition():
             return True
-        elif self.is_negation():
+        elif self.is_negation() and Proposition(self.fmla[1:]).is_fmla():
             return True
         elif bool(self.is_binary_connective()):
             return True
@@ -63,11 +63,11 @@ class Proposition:
             return True
         elif self.is_negation() and con(self.fmla[1:]) == '=>':
             return True
-        elif self.is_negation() and con(self.fmla[1:]) == '\/':
+        elif self.is_negation() and con(self.fmla[1:]) == '\\/':
             return True
         
     def is_beta(self):
-        if con(self.fmla) == '\/':
+        if con(self.fmla) == '\\/':
             return True
         elif con(self.fmla) == '=>':
             return True
@@ -88,8 +88,13 @@ class FirstOrderLogic:
             return len(vars) == 2 and all(var in ['x', 'y', 'z', 'w'] for var in vars)
         return False
 
+    # write a function that checks if a First order logic formula is a negation
     def is_negation(self):
-        return self.fmla.startswith('~') and FirstOrderLogic(self.fmla[1:]).is_fmla()
+        if self.fmla.startswith('~'):
+            if FirstOrderLogic(self.fmla[1:]).is_fmla():
+                return True
+            return True
+        return False
 
     def is_universally_quantified(self):
         return self.fmla.startswith('A') and self.fmla[1] in ['x', 'y', 'z', 'w'] and FirstOrderLogic(self.fmla[2:]).is_fmla()
@@ -108,13 +113,13 @@ class FirstOrderLogic:
             elif self.fmla[i] == ')':
                 brackets -= 1
             elif brackets == 0:
-                for conn in ['=>', '/\\', '\\/']:
+                for conn in ['=>', '/\\', '\/']:
                     if self.fmla[i:i+len(conn)] == conn:
                         left = self.fmla[1:i]
                         right = self.fmla[i+len(conn):-1]
-                        # check if there are any extra pairs of brackets on the end of both formulas
                         if FirstOrderLogic(left).is_fmla() and FirstOrderLogic(right).is_fmla():
                             return left, conn, right
+        #print(conn)
         return None
 
     def is_fmla(self):
@@ -141,15 +146,27 @@ class FirstOrderLogic:
             return True
         elif self.is_negation() and con(self.fmla[1:]) == '=>':
             return True
-        elif self.is_negation() and con(self.fmla[1:]) == '\/':
+        elif self.is_negation() and con(self.fmla[1:]) == '\\/':
             return True
         
     def is_beta(self):
-        if con(self.fmla) == '\/':
+        if con(self.fmla) == '\\/':
             return True
         elif con(self.fmla) == '=>':
             return True
         elif self.is_negation() and con(self.fmla[1:]) == '/\\':
+            return True
+        
+    def is_delta(self):
+        if self.is_existentially_quantified():
+            return True
+        elif self.is_negation() and FirstOrderLogic(self.fmla[1:]).is_universally_quantified():
+            return True
+        
+    def is_gamma(self):
+        if self.is_universally_quantified():
+            return True
+        elif self.is_negation() and FirstOrderLogic(self.fmla[1:]).is_existentially_quantified():
             return True
 
 def clean_negations(fmla):
@@ -180,10 +197,10 @@ def check_matching_brackets(fmla):
 
 # Parse a formula, consult parseOutputs for return values.
 def parse(fmla):
-    if FirstOrderLogic(fmla).is_fmla():
-        return FirstOrderLogic(fmla).parse()
-    elif Proposition(fmla).is_fmla():
+    if Proposition(fmla).is_fmla():
         return Proposition(fmla).parse()
+    elif FirstOrderLogic(fmla).is_fmla():
+            return FirstOrderLogic(fmla).parse()
     else:
         return 0
 
@@ -235,16 +252,24 @@ def rhs(fmla):
 def theory(fmla):#initialise a theory with a single formula in it
     return [fmla]
 
-def expanded(branch):#check if a branch is expanded
+def expanded(branch):
     for fmla in branch:
         fmla = clean_negations(fmla)
+        #print("0", FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_binary_connective())
+        # print("1", (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_binary_connective()))
+        # print("2", FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_binary_connective()) 
+        # print('3', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_universally_quantified())
+        # print('4', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_existentially_quantified())
+        # print('5', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_universally_quantified())
+        # print('6', FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified())
+
         if Proposition(fmla).is_fmla() and Proposition(fmla).is_binary_connective() or (Proposition(fmla).is_fmla() and Proposition(fmla).is_negation() and Proposition(fmla[1:]).is_binary_connective()):
             return False  
         elif (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_binary_connective()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_binary_connective()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_universally_quantified()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_existentially_quantified()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_universally_quantified()) or (FirstOrderLogic(fmla).is_fmla() and FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified()):
             return False 
     return True
 
-def contradictory(branch):#check if a branch is contradictory
+def contradictory(branch):
     for fmla in branch:
         if Proposition(fmla).is_fmla():
             if Proposition(fmla).is_proposition():
@@ -253,26 +278,27 @@ def contradictory(branch):#check if a branch is contradictory
             if Proposition(fmla).is_negation():
                 if fmla in branch and fmla[1:] in branch:
                     return True
-        elif FirstOrderLogic(fmla).is_fmla():
+        elif FirstOrderLogic(fmla).is_fmla(): 
+            #print(fmla, branch)
             if FirstOrderLogic(fmla).is_predicate():
                 if fmla in branch and '~'+fmla in branch:
                     return True
-            if FirstOrderLogic(fmla).is_negation():
+            if FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_predicate():
                 if fmla in branch and fmla[1:] in branch:
                     return True
     return False
 
-def pick_non_literal(branch):#pick a non-literal formula from a branch
-    for fmla in branch:
+def pick_non_literal(branch):
+    for fmla in reversed(branch):
         if Proposition(fmla).is_fmla():
             if Proposition(fmla).is_binary_connective():
                 return fmla
-            if Proposition(fmla).is_negation():
+            if Proposition(fmla).is_negation() and Proposition(fmla[1:]).is_binary_connective():
                 return fmla
         elif FirstOrderLogic(fmla).is_fmla():
             if FirstOrderLogic(fmla).is_binary_connective():
                 return fmla
-            if FirstOrderLogic(fmla).is_negation():
+            if FirstOrderLogic(fmla).is_negation() and (FirstOrderLogic(fmla[1:]).is_binary_connective() or FirstOrderLogic(fmla[1:]).is_universally_quantified() or FirstOrderLogic(fmla[1:]).is_existentially_quantified):
                 return fmla
             if FirstOrderLogic(fmla).is_universally_quantified():
                 return fmla
@@ -280,36 +306,41 @@ def pick_non_literal(branch):#pick a non-literal formula from a branch
                 return fmla
     return None
 
-def pick_new_constant():#pick a new constant
+def pick_new_constant():
     for i in 'abcdefghijklmnotuv':
         if i not in constants:
             constants.append(i)
             return i
 
-def find_scope(fmla):
-    if fmla.startswith('('):
-        brackets = 1
-        for i in range(1, len(fmla)):
-            if fmla[i] == '(':
-                brackets += 1
-            elif fmla[i] == ')':
-                brackets -= 1
-                if brackets == 0:
-                    return fmla[1:i], fmla[i+1:]
-    return fmla, ''  # Return the whole formula if no brackets found
+def replace_variable_in_scope(fmla, old_var, new_var):
 
-def pick_old_constant():#pick an old constant
-    for i in constants:
-        return i
+    if len(fmla) < 3 or fmla[1] != old_var or fmla[0] not in ['A', 'E']:
+        return fmla
+ 
+    scope = fmla[2:]  
+
+    modified_scope = scope.replace(old_var, new_var)
+
+    return modified_scope
+
+def pick_next_constant(last_constant = None):
+    if last_constant:
+        next_idx = constants.index(last_constant) + 1
+        if next_idx < len(constants):
+            return constants[next_idx]
+    return pick_new_constant()
 
 global constants
 constants = []
+used_constants = []
 
 #check for satisfiability
 def sat(tableau):
 #output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
+    last_constant_used = {}
     while tableau:
         branch = tableau.pop()
+        #print("EXPANDED", expanded(branch))
         if expanded(branch) and not contradictory(branch):
             return 1
         else:
@@ -318,8 +349,10 @@ def sat(tableau):
                 fmla_index = branch.index(fmla)
                 fmla = clean_negations(fmla)
                 branch[fmla_index] = fmla
+                #print(FirstOrderLogic(fmla).is_negation())
 
                 if Proposition(fmla).is_fmla():
+                    
                     if Proposition(fmla).is_alpha():
                         if con(fmla) == '/\\':
                             branch.remove(fmla)
@@ -331,7 +364,7 @@ def sat(tableau):
                             branch = branch + [lhs(fmla[1:]), '~' + rhs(fmla[1:])]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
-                        elif Proposition(fmla).is_negation() and con(fmla[1:]) == '\/':
+                        elif Proposition(fmla).is_negation() and con(fmla[1:]) == '\\/':
                             branch.remove(fmla)
                             branch = branch + ['~' + lhs(fmla[1:]), '~' + rhs(fmla[1:])]
                             if not contradictory(branch) and branch not in tableau:
@@ -363,10 +396,7 @@ def sat(tableau):
                                     tableau.append(new_branch2)
 
                 elif FirstOrderLogic(fmla).is_fmla():
-                    if FirstOrderLogic(fmla).is_alpha():
-                        if len(constants) > MAX_CONSTANTS:
-                            return 2
-                        
+                    if FirstOrderLogic(fmla).is_alpha():                        
                         if con(fmla) == '/\\':
                             branch.remove(fmla)
                             branch = branch + [lhs(fmla), rhs(fmla)]
@@ -377,15 +407,13 @@ def sat(tableau):
                             branch = branch + [lhs(fmla[1:]), '~' + rhs(fmla[1:])]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
-                        elif FirstOrderLogic(fmla).is_negation() and con(fmla[1:]) == '\/':
+                        elif FirstOrderLogic(fmla).is_negation() and con(fmla[1:]) == '\\/':
                             branch.remove(fmla)
                             branch = branch + ['~' + lhs(fmla[1:]), '~' + rhs(fmla[1:])]
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.append(branch)
 
                     elif FirstOrderLogic(fmla).is_beta():
-                            if len(constants) > MAX_CONSTANTS:
-                                return 2
                             branch.remove(fmla)
                             if con(fmla) == '\\/':
                                 new_branch1 = branch + [lhs(fmla)]
@@ -410,6 +438,53 @@ def sat(tableau):
                                     tableau.append(new_branch1)
                                 if not contradictory(new_branch2) and new_branch2 not in tableau:
                                     tableau.append(new_branch2)
+
+                    elif FirstOrderLogic(fmla).is_delta():
+                        if len(constants) > MAX_CONSTANTS:
+                            return 2
+                        if FirstOrderLogic(fmla).is_existentially_quantified():
+                            branch.remove(fmla)
+                            fmla = replace_variable_in_scope(fmla, fmla[1], pick_new_constant())
+                            branch = branch + [fmla]
+                            if not contradictory(branch) and branch not in tableau:
+                                tableau.append(branch)
+                        elif FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_universally_quantified():
+                            branch.remove(fmla)
+                            fmla = replace_variable_in_scope(fmla[1:], fmla[2], pick_new_constant())
+                            branch = branch + ['~' + fmla]
+                            if not contradictory(branch) and branch not in tableau:
+                                tableau.append(branch)
+
+                    elif FirstOrderLogic(fmla).is_gamma():
+                        #print(len(constants))
+                        if len(constants) > MAX_CONSTANTS:
+                            return 2
+                        if FirstOrderLogic(fmla).is_universally_quantified():
+                            quantified_var = fmla[1]
+                            last_constant = None
+                            if fmla in last_constant_used:
+                                last_constant = last_constant_used[fmla]
+                            new_term = pick_next_constant(last_constant)
+                            #print(new_term)
+                            last_constant_used[fmla] = new_term
+                            instantiated_fmla = replace_variable_in_scope(fmla, quantified_var, new_term)
+                            if instantiated_fmla not in branch:
+                                branch.append(instantiated_fmla)
+                            #print(not contradictory(branch), branch not in tableau)
+                            if not contradictory(branch) and branch not in tableau:
+                                tableau.append(branch)
+                        elif FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified():
+                            quantified_var = fmla[2]
+                            last_constant = None
+                            if fmla in last_constant_used:
+                                last_constant = last_constant_used[fmla]
+                            new_term = pick_next_constant(last_constant)
+                            last_constant_used[fmla] = new_term
+                            instantiated_fmla = replace_variable_in_scope(fmla, quantified_var, new_term)
+                            if instantiated_fmla not in branch:
+                                branch.append(instantiated_fmla)
+                            if not contradictory(branch) and branch not in tableau:
+                                tableau.append(branch)
     return 0
 
 #DO NOT MODIFY THE CODE BELOW
