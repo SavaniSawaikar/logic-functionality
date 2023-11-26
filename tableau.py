@@ -39,6 +39,7 @@ class Proposition:
     def is_fmla(self):
         if ' ' in self.fmla or not check_matching_brackets(self.fmla):
             return False
+
         if self.is_proposition():
             return True
         elif self.is_negation() and Proposition(self.fmla[1:]).is_fmla():
@@ -192,6 +193,8 @@ def check_matching_brackets(fmla):
     return False
 
 def parse(fmla):
+    if fmla[0:2] + fmla[3:] == "~()":
+        return 0
     if Proposition(fmla).is_fmla():
         return Proposition(fmla).parse()
     elif FirstOrderLogic(fmla).is_fmla():
@@ -357,7 +360,6 @@ def sat(tableau):
     constants = []
     while tableau:
         branch = tableau.pop()
-
         if expanded(branch) and not contradictory(branch):
             return 1
         else:
@@ -490,6 +492,8 @@ def sat(tableau):
                             instantiated_fmla = replace_variable_in_scope(fmla, quantified_var, new_term)
                             if instantiated_fmla not in branch:
                                 branch.insert(0, instantiated_fmla)
+                            branch.remove(fmla)
+                            branch.insert(0, fmla)
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.insert(0, branch)
                         elif FirstOrderLogic(fmla).is_negation() and FirstOrderLogic(fmla[1:]).is_existentially_quantified():
@@ -506,8 +510,11 @@ def sat(tableau):
                             instantiated_fmla = replace_variable_in_scope(fmla, quantified_var, new_term)
                             if instantiated_fmla not in branch:
                                 branch.insert(0, instantiated_fmla)
+                            branch.remove(fmla)
+                            branch.insert(0, fmla)
                             if not contradictory(branch) and branch not in tableau:
                                 tableau.insert(0, branch)
+                                
     return 0
 
 #DO NOT MODIFY THE CODE BELOW
